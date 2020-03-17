@@ -11,6 +11,8 @@ from data_utils import *
 import os
 import sys
 
+from make_picklable import make_keras_picklable
+
 # -------------------------------------------------
 # PLOTTING HELPERS
 # -------------------------------------------------
@@ -71,7 +73,7 @@ def errorfill(x, y, yerr, color=None, alpha_fill=0.2, ax=None, fmt='-o', label=N
 # -------------------------------------------------
 
 make_keras_picklable()
-np.set_printoptions(threshold=np.nan)
+np.set_printoptions(threshold=sys.maxsize)
 
 datset = sys.argv[1]
 test_type = sys.argv[3]
@@ -173,7 +175,7 @@ for shift_idx, shift in enumerate(shifts):
         set_random_seed(rand_run)
 
         # Load data
-        (X_tr_orig, y_tr_orig), (X_val_orig, y_val_orig), (X_te_orig, y_te_orig), orig_dims = import_dataset(datset, shuffle=True)
+        (X_tr_orig, y_tr_orig), (X_val_orig, y_val_orig), (X_te_orig, y_te_orig), orig_dims, nb_classes = import_dataset(datset, shuffle=True)
         X_tr_orig = normalize_datapoints(X_tr_orig, 255.)
         X_te_orig = normalize_datapoints(X_te_orig, 255.)
         X_val_orig = normalize_datapoints(X_val_orig, 255.)
@@ -181,14 +183,14 @@ for shift_idx, shift in enumerate(shifts):
         # Apply shift
         if shift == 'orig':
             print('Original')
-            (X_tr_orig, y_tr_orig), (X_val_orig, y_val_orig), (X_te_orig, y_te_orig), orig_dims = import_dataset(datset)
+            (X_tr_orig, y_tr_orig), (X_val_orig, y_val_orig), (X_te_orig, y_te_orig), orig_dims, nb_classes = import_dataset(datset)
             X_tr_orig = normalize_datapoints(X_tr_orig, 255.)
             X_te_orig = normalize_datapoints(X_te_orig, 255.)
             X_val_orig = normalize_datapoints(X_val_orig, 255.)
             X_te_1 = X_te_orig.copy()
             y_te_1 = y_te_orig.copy()
         else:
-            (X_te_1, y_te_1) = apply_shift(X_te_orig, y_te_orig, shift)
+            (X_te_1, y_te_1) = apply_shift(X_te_orig, y_te_orig, shift, orig_dims, datset)
 
         X_te_2 , y_te_2 = random_shuffle(X_te_1, X_te_1)
 
@@ -217,7 +219,7 @@ for shift_idx, shift in enumerate(shifts):
 
             # Detect shift
             shift_detector = ShiftDetector(dr_techniques, test_types, od_tests, md_tests, sign_level, red_models, sample, datset)
-            (od_decs, ind_od_decs, ind_od_p_vals), (md_decs, ind_md_decs, ind_md_p_vals), red_dim, red_models = shift_detector.detect_data_shift(X_tr_3, y_tr_3, X_val_3, y_val_3, X_te_3, orig_dims)
+            (od_decs, ind_od_decs, ind_od_p_vals), (md_decs, ind_md_decs, ind_md_p_vals), red_dim, red_models = shift_detector.detect_data_shift(X_tr_3, y_tr_3, X_val_3, y_val_3, X_te_3, y_te_3, orig_dims, nb_classes)
 
             if test_type == 'multiv':
                 print("Shift decision: ", ind_md_decs.flatten())
